@@ -1,98 +1,106 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { GoalInput } from "@/components/ui/GoalInput/GoalInput";
+import GoalItem from "@/components/ui/GoalItem/GoalItem";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
+import { Button, FlatList, StyleSheet, View } from "react-native";
 
 export default function HomeScreen() {
+  const [goal, setGoal] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [listOfGoals, setListOfGoals] = useState<
+    { id: string; text: string; done: boolean }[]
+  >([]);
+  const textInputChange = (text: string) => {
+    setGoal(text);
+  };
+  const addGoal = () => {
+    if (isUpdating) {
+      setListOfGoals((currentListOfGoals) => {
+        return [
+          ...currentListOfGoals,
+          { id: Math.random().toString(), text: goal, done: false },
+        ];
+      });
+      setGoal("");
+      setIsUpdating(false);
+    } else {
+      setListOfGoals((currentListOfGoals) => {
+        return [
+          ...currentListOfGoals,
+          { id: Math.random().toString(), text: goal, done: false },
+        ];
+      });
+      setGoal("");
+    }
+  };
+  const deleteGoal = (id: string) => {
+    setListOfGoals((currentListOfGoals) => {
+      return currentListOfGoals.filter((goal) => goal.id !== id);
+    });
+  };
+  const onDone = (id: string) => {
+    setListOfGoals((currentListOfGoals) => {
+      return currentListOfGoals.map((goal) => {
+        if (goal.id === id) {
+          return { ...goal, done: !goal.done };
+        }
+        return goal;
+      });
+    });
+  };
+  const onUpdate = (id: string) => {
+    const goalToUpdate = listOfGoals.find((goal) => goal.id === id);
+    if (goalToUpdate) {
+      setGoal(goalToUpdate.text);
+      setIsUpdating(true);
+      setIsOpen(true);
+      deleteGoal(id);
+    }
+  };
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <Button onPress={() => setIsOpen(!isOpen)} title="Add Goal" />
+      <GoalInput
+        inUpdate={isUpdating}
+        addGoal={addGoal}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        goal={goal}
+        textInputChange={textInputChange}
+      />
+      <View style={styles.listOfGoals}>
+        <FlatList
+          keyExtractor={(item) => item.id.toString()}
+          data={listOfGoals}
+          alwaysBounceVertical={false}
+          renderItem={({ item }) => (
+            <GoalItem
+              onUpdate={onUpdate}
+              onDelete={deleteGoal}
+              onDone={onDone}
+              item={item}
             />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+          )}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    paddingTop: 90,
+    paddingHorizontal: 16,
+    flex: 1,
+    backgroundColor: "#fff",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  listOfGoals: {
+    flex: 4,
+    flexDirection: "column",
+    textAlign: "auto",
+    gap: 16,
   },
 });
